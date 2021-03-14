@@ -4,9 +4,10 @@
 #install.packages("tensorflow")
 #install.packages("keras")
 reticulate::py_install("kaggle")
+install_tensorflow(method = 'conda', envname = 'r-reticulate')
 
 
-install_tensorflow(method = 'conda', envname = 'r-reticulate')library(devtools)
+library(devtools)
 library(kaggler)
 library(reticulate)
 library(keras)
