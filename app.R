@@ -22,5 +22,5 @@ kaggle$api$dataset_download_files("sakshigoyal7/credit-card-customers", "BankChu
 
 #########read the csv data
 
-
+data <- read.csv("BankChurners.csv/BankChurners.csv",sep=",")
 
