@@ -3,8 +3,8 @@
 #install.packages("reticulate")
 #install.packages("tensorflow")
 #install.packages("keras")
-reticulate::py_install("kaggle")
-install_tensorflow(method = 'conda', envname = 'r-reticulate')
+# reticulate::py_install("kaggle")
+# install_tensorflow(method = 'conda', envname = 'r-reticulate')
 
 
 library(devtools)
@@ -20,7 +20,8 @@ kaggle <- import("kaggle")
 kaggle$api$authenticate()
 kaggle$api$dataset_download_files("sakshigoyal7/credit-card-customers", "BankChurners.csv", unzip = T)
 
-#########read the csv data
+#########   Read the csv data
 
 data <- read.csv("BankChurners.csv/BankChurners.csv",sep=",")
+sum(is.na(data))
 
