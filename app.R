@@ -37,3 +37,49 @@ row.names(data)=data[,1]
 data = data[,-1]
 colnames(data)
 table(data$Income_Category)
+
+
+
+################## AIM OF THE STUDY:
+
+data <- data[,-c(4,9,10,11,12,21,22)]
+
+
+###################################
+
+data$Attrition_Flag=as.factor(data$Attrition_Flag)
+data$Card_Category=as.factor(data$Card_Category)
+data$Customer_Age=as.integer(data$Customer_Age)
+data$Gender=as.factor(data$Gender)
+data$Education_Level=as.factor(data$Education_Level)
+data$Income_Category=as.factor(data$Income_Category)
+data$Avg_Open_To_Buy=as.integer(data$Avg_Open_To_Buy)
+
+#################################
+
+Income_Category_final=matrix(NA,nrow=nrow(data),ncol=1)
+for (i in 1:nrow(data)){
+  if(data[i,15]=="$120K +"){
+    Income_Category_final[i]="FirstClass"
+  }
+  if(data[i,15]=="$60K - $80K"){
+    Income_Category_final[i]="SecondClass"
+  }
+  if(data[i,15]=="$80K - $120K"){
+    Income_Category_final[i]="FirstClass"
+  }
+  if(data[i,15]=="$40K - $60K"){
+    Income_Category_final[i]="SecondClass"
+  }
+  if(data[i,15]=="Less than $40K"){
+    Income_Category_final[i]="SecondClass"
+  }
+}
+
+data = data.frame(data[,-15],Income_Category_final)
+data$Income_Category_final = as.factor(data$Income_Category_final)
+
+
+###############################################################
+
+
