@@ -23,5 +23,17 @@ kaggle$api$dataset_download_files("sakshigoyal7/credit-card-customers", "BankChu
 #########   Read the csv data
 
 data <- read.csv("BankChurners.csv/BankChurners.csv",sep=",")
-sum(is.na(data))
 
+
+######## OBSERVE IF THERE ARE NA'S
+
+sum(is.na(data))  
+
+######### THERE IS NO NA
+
+########## CLEAN THE DATA 
+
+row.names(data)=data[,1]
+data = data[,-1]
+colnames(data)
+table(data$Income_Category)
