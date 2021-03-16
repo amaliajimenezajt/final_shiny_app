@@ -190,11 +190,13 @@ numerical.plots <- tabPanel("Numerical Plots",
 
 cat_plot <- tabPanel("Categorical Plotly",
                      useShinyjs(),
-                     h2("This is the Plotly of the categorical variable Income which is the response in the clasification problem"),
+                     splitLayout(
+                    style = "border: 1px solid silver;",
+                     h3("This is the Plotly of the categorical variable Income which is the response in the clasification problem"),
                      column(4,plotlyOutput(outputId = "plotlysec"),height="600px"),
                      column(4,plotlyOutput(outputId = "plotlypoint"),height="600px"),
                             
-                            
+                     )
 ) # tab panel 
 
 
@@ -205,7 +207,8 @@ cat_plot <- tabPanel("Categorical Plotly",
 ui <- navbarPage("Shiny by Amalia Jiménez",
                  theme = shinytheme("superhero"),
                  summary_tabPanel,
-                 numerical.plots
+                 numerical.plots,
+                 cat_plot
                  )
 
 ################################## SERVER SECTION
@@ -261,9 +264,26 @@ output$histPlot <- renderPlot({
 })
 
 
+output$plotlysec <- renderPlotly({
+  plot_ly(data, x = ~Total_Trans_Amt, y = ~Total_Trans_Ct, type = "scatter", mode = "markers",
+          symbol = ~Income_Category_final) %>% 
+    layout(title = "Freq12 vs Freq 24",
+           xaxis = list(title = "Total_Trans_Amt"), 
+           yaxis = list(title = "Total_Trans_Ct"))
+})
 
 
-
+output$plotlypoint <- renderPlotly({
+  colors <- c('rgb(211,94,96)', 'rgb(128,133,133)')
+  
+  plot1 <- plot_ly(data, labels = ~Income_Category_final,  type = 'pie',
+                   marker = list(colors = colors,
+                                 line = list(color = '#FFFFFF', width = 1)))
+  plot1 <- plot1 %>% layout(title = 'PIE  PLOT CARD VARIABLE',
+                            xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                            yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+  
+})
 
   
   
