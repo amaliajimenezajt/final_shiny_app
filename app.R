@@ -120,10 +120,12 @@ data$Income_Category_final = as.factor(data$Income_Category_final)
 ############## NUMERICAL VARIABLES
 
 num_data <- data[,c(2,6:11)]
+num_data <- num_data[,-c(3,6)]
 
 ############## CATEGORICAL VARIABLES
 
 cat_data <- data[,c(1,3,4,5,12)]
+cat_data <- cat_data [,-2]
 
 ############################################################### APP
 
@@ -131,9 +133,11 @@ library(shiny)
 library(shinythemes)
 
 
-###########################
+######################################################
 
 choices_val_num <- colnames(num_data)
+
+
 choices_val_cat <- colnames(cat_data)
 
 #################################### UI SECTION
@@ -228,8 +232,19 @@ output$view <- renderTable({
 
 output$boxplot <- renderPlot({
   ggplot(data,aes(x=data[,input$variablescat], y=data[,input$variablesnum])) +
-    geom_boxplot(aes(fill=input$variablescat)) + coord_flip()
-  
+    geom_boxplot(aes(fill=data[,input$variablescat]),notchwidth = 0.8,outlier.colour="red",outlier.fill="red",
+                                   outlier.size=1) + 
+    stat_summary(fun.y=mean, geom="point", shape=18,
+                      size=3, color="red")+
+    theme_bw() 
+
+})
+
+output$histPlot <- renderPlot({
+  ggplot(data = data, aes_string(x = input$variablesnum)) +
+    geom_histogram(bins = input$bins, fill = "darkslategray4", color = "black") +
+    theme_bw()
+
 })
 
 
