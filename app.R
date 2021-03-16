@@ -1,8 +1,8 @@
-#install.packages("devtools")
-#install.packages("usethis")
-#install.packages("reticulate")
-#install.packages("tensorflow")
-#install.packages("keras")
+# install.packages("devtools")
+# install.packages("usethis")
+# install.packages("reticulate")
+# install.packages("tensorflow")
+# install.packages("keras")
 # reticulate::py_install("kaggle")
 # install_tensorflow(method = 'conda', envname = 'r-reticulate')
 
@@ -14,6 +14,7 @@ library(keras)
 library(tensorflow)
 library(reticulate)
 library(ggplot2)
+library(devtools)
 
 ##################################### UPLOAD THE CSV DATA
 
@@ -133,6 +134,13 @@ library(shiny)
 library(shinythemes)
 library(plotly)
 library(shinyjs)
+library(caret)
+library(AppliedPredictiveModeling)
+library(caret)
+library(shiny)
+library(e1071)
+library(pROC)
+
 
 ######################################################
 
@@ -190,14 +198,40 @@ numerical.plots <- tabPanel("Numerical Plots",
 
 cat_plot <- tabPanel("Categorical Plotly",
                      useShinyjs(),
-                     splitLayout(
                     style = "border: 1px solid silver;",
+                    cellWidths = 300,
+                    cellArgs = list(style = "padding: 6px"),
                      h3("This is the Plotly of the categorical variable Income which is the response in the clasification problem"),
-                     column(4,plotlyOutput(outputId = "plotlysec"),height="600px"),
-                     column(4,plotlyOutput(outputId = "plotlypoint"),height="600px"),
-                            
-                     )
+                     column(6,plotlyOutput(outputId = "plotlysec"),height="600px"),
+                     column(6,plotlyOutput(outputId = "plotlypoint"),height="600px"),
+                          
 ) # tab panel 
+
+
+classif_tab <- tabPanel("Clasification Problem",
+                        sidebarLayout(
+                          sidebarPanel(
+                            p("Hello"),
+                            br(),
+                            sliderInput("train",
+                                        "Training Fraction Data:",
+                                        value = 0.75, step = 0.05, min = 0.60, max = 0.80),
+                            br(),
+                            HTML("<hr>"),
+                            radioButtons("methodsec", h4("Caret Model"),
+                                         c("Linear Discriminant Analysis (lda)"          = "lda",
+                                           "Quadratic Discriminant Analysis (lda)" = "qda",
+                                           "Random Forest (rf) "                        = "rf",
+                                           "Support Vector Machines"  = "svm"
+                                         ))),
+                            mainPanel(tabsetPanel(type = "tabs",
+                                          tabPanel("Summary-Fit",  verbatimTextOutput("fit")),
+                                          tabPanel("ConfusionMatrix",  verbatimTextOutput("confusion")),
+                                          tabPanel("Importance variables",  plotOutput("importance"))
+                            ))
+                            
+                        ) # sidebarLayout
+) # tabpanel
 
 
 
@@ -208,10 +242,41 @@ ui <- navbarPage("Shiny by Amalia Jiménez",
                  theme = shinytheme("superhero"),
                  summary_tabPanel,
                  numerical.plots,
-                 cat_plot
+                 cat_plot,
+                 classif_tab 
                  )
 
 ################################## SERVER SECTION
+
+server_train <- function(train){
+  set.seed(1996)
+  datatrain <- createDataPartition(y=data$Income_Category_final, p=train, list=FALSE)
+  trainBank <- data[datatrain,]
+  testBank <- data[-trainBank,]
+  invisible(list(training=trainBank,testing=testBank))
+}
+
+server_model <- function(methodsec,training){
+  ctrl <- trainControl(method = "repeatedcv", 
+                       repeats = 1,
+                       number = 5)
+  fit <- train(Income_Category_final ~ ., 
+                 method = methodsec,
+                 family = "binomial",
+                 data = training,
+                 preProcess = c("center", "scale"),
+                 metric = "Accuracy",
+                 trControl = ctrl)
+  invisible(fit)
+  
+}
+
+response_fit <- function(methodsec, train)
+{
+  dis <- server_train(train)
+  fit <- server_model(methodsec, dis$training)
+  invisible(fit)
+}
 
 
 
@@ -233,18 +298,6 @@ output$view <- renderTable({
     head(DataSetInput(), n = input$obs)
   })
 
-
-
-# output$boxplot <- renderPlot({
-#   ggplot(data=data, aes(data[,input$variablescat] , data[,input$variablesnum])) +
-#     geom_boxplot(color="black",fill= input$variablescat,alpha=0.2,
-#                  notchwidth = 0.8,outlier.colour="red",outlier.fill="red",
-#                  outlier.size=3)+
-#     stat_summary(fun.y=mean, geom="point", shape=18,
-#                  size=3, color="red")+
-#     theme_bw() +
-#     scale_fill_manual(values=c('lightcyan1'))
-# })
 
 output$boxplot <- renderPlot({
   ggplot(data,aes(x=data[,input$variablescat], y=data[,input$variablesnum])) +
@@ -285,12 +338,15 @@ output$plotlypoint <- renderPlotly({
   
 })
 
-  
-  
-  
-  
-  
-  
+datamodel <- reactive({
+  response_fit(input$train,input$methodsec)
+})
+
+output$fit <- renderPrint({
+  datamodel()$fit
+})
+
+
 }
 
 
