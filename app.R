@@ -131,7 +131,8 @@ cat_data <- cat_data [,-2]
 
 library(shiny)
 library(shinythemes)
-
+library(plotly)
+library(shinyjs)
 
 ######################################################
 
@@ -186,6 +187,18 @@ numerical.plots <- tabPanel("Numerical Plots",
                             ) # sidebarlayout
     
 ) # tab panel 
+
+cat_plot <- tabPanel("Categorical Plotly",
+                     useShinyjs(),
+                     h2("This is the Plotly of the categorical variable Income which is the response in the clasification problem"),
+                     column(4,plotlyOutput(outputId = "plotlysec"),height="600px"),
+                     column(4,plotlyOutput(outputId = "plotlypoint"),height="600px"),
+                            
+                            
+) # tab panel 
+
+
+
 
 
 
