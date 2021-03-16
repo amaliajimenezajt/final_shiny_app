@@ -114,12 +114,24 @@ for (i in 1:nrow(data)){
 data = data.frame(data[,-5],Income_Category_final)
 data$Income_Category_final = as.factor(data$Income_Category_final)
 
+############## NUMERICAL VARIABLES
+
+num_data <- data[,c(2,6:11)]
+
+############## CATEGORICAL VARIABLES
+
+cat_data <- data[,c(1,3,4,5,12)]
 
 ############################################################### APP
 
 library(shiny)
 library(shinythemes)
 
+
+###########################
+
+choices_val_num <- colnames(num_data)
+choices_val_cat <- colnames(cat_data)
 
 #################################### UI SECTION
 
@@ -138,21 +150,42 @@ summary_tabPanel <- tabPanel("Summary Data",
                                                           value = 10)
                                                 
                                            ), # sidebarpanel
-                                           mainPanel(
-                                          verbatimTextOutput("summary"),
-                                         tableOutput("view"))
+                                           mainPanel(tabsetPanel(type = "tabs",
+                                                                 tabPanel("Summary", verbatimTextOutput("summary")),
+                                                                 tabPanel("View", tableOutput("view"))))
+                                           
 
                              ) #sidebarLayout
 ) # tabPanel
 
-
-
+numerical.plots <- tabPanel("Numerical Plots",
+                            sidebarLayout(position="right",
+                            sidebarPanel(h3(strong("BOX-PLOT/HISTOGRAM")),
+                                         p("Select the numerical variable you want to display, if you want to see the histogram select the number of bins desired:"),
+                                         HTML("<hr>"),
+                                         radioButtons(inputId="variablesnum", 
+                                                      label=h4("Select Numeric Variable to show"),
+                                                      choices=choices_val_num),
+                                         radioButtons(inputId="variablescat", 
+                                                      label=h4("Select Numeric Variable to show"),
+                                                      choices=choices_val_cat),
+                                         sliderInput("bins", label=h4("Select n-bins for the histogram plot"),
+                                                     min = 1, max = 50, value = 30))
+                                         , # sidebar panel
+                            mainPanel(tabsetPanel(type = "tabs",
+                                                  tabPanel("Box-plot", plotOutput("boxplot")),
+                                                  tabPanel("Histogram", plotOutput("histPlot"))))
+  
+                            ) # sidebarlayout
+    
+) # tab panel 
 
 
 
 ui <- navbarPage("Shiny by Amalia Jiménez",
                  theme = shinytheme("superhero"),
-                 summary_tabPanel
+                 summary_tabPanel,
+                 numerical.plots
                  )
 
 ################################## SERVER SECTION
@@ -164,8 +197,8 @@ server <- function(input, output) {
   
 DataSetInput <- reactive({
     switch(input$DataSet,
-           "Real Data" = data_real[,c(1:4)],
-           "Data Cleaned" = data[,c(1:4)])
+           "Real Data" = data_real,
+           "Data Cleaned" = data)
   })
   
 output$summary <- renderPrint({
@@ -176,6 +209,24 @@ output$summary <- renderPrint({
 output$view <- renderTable({
     head(DataSetInput(), n = input$obs)
   })
+
+
+
+output$boxplot <- renderPlot({
+  ggplot(data=data, aes(data$input$variablescat, data[,input$variablesnum])) + 
+    geom_boxplot(color="black",fill=c("cyan3",'darkgoldenrod1'),alpha=0.2,
+                 notchwidth = 0.8,outlier.colour="red",outlier.fill="red",
+                 outlier.size=3)+
+    stat_summary(fun.y=mean, geom="point", shape=18,
+                 size=3, color="red")+
+    theme_bw() +
+    scale_fill_manual(values=c('lightcyan1'))
+})
+
+
+
+
+
   
   
   
