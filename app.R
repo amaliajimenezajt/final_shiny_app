@@ -6,7 +6,7 @@
 # reticulate::py_install("kaggle")
 # install_tensorflow(method = 'conda', envname = 'r-reticulate')
 
-
+library(dplyr)
 library(devtools)
 library(kaggler)
 library(reticulate)
@@ -25,7 +25,7 @@ kaggle$api$dataset_download_files("sakshigoyal7/credit-card-customers", "BankChu
 data_real <- read.csv("BankChurners.csv/BankChurners.csv",sep=",")
 row.names(data_real )=data_real [,1] 
 data_real = data_real[,-1]
-  
+
 
 data <- read.csv("BankChurners.csv/BankChurners.csv",sep=",")
 
@@ -134,21 +134,16 @@ ui <- navbarPage("Shiny by Amalia Jiménez",
 
 server <- function(input, output) {
   
-samples <- reactive({
-    input$goButton;
-    dist <- eval(parse(text=paste(input$dist)))
-    dist(isolate(input$n_sample))
-  });
   
 DataSetInput <- reactive({
-    switch(input$dataset,
-           "Real Data" = data_real[,c(1:10)],
-           "Data Cleaned" = data)
+    switch(input$DataSet,
+           "Real Data" = data_real[,c(1:4)],
+           "Data Cleaned" = data[,c(1:4)])
   })
   
 output$summary <- renderPrint({
-    dataset <- DataSetInput()
-    summary(dataset)
+    DataSet <- DataSetInput()
+    summary(DataSet)
   })
   
 output$view <- renderTable({
