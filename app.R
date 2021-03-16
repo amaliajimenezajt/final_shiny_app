@@ -13,6 +13,7 @@ library(reticulate)
 library(keras)
 library(tensorflow)
 library(reticulate)
+library(ggplot2)
 
 ##################################### UPLOAD THE CSV DATA
 
@@ -81,6 +82,8 @@ data <- data[-c(which(is.na(data$Income_Category)),which(is.na(data$Education_Le
 
 ###################################  Now, I will convert the variables:
 
+
+data$Gender=as.factor(data$Gender)
 data$Attrition_Flag=as.factor(data$Attrition_Flag)
 data$Card_Category=as.factor(data$Card_Category)
 data$Customer_Age=as.integer(data$Customer_Age)
@@ -212,16 +215,23 @@ output$view <- renderTable({
 
 
 
+# output$boxplot <- renderPlot({
+#   ggplot(data=data, aes(data[,input$variablescat] , data[,input$variablesnum])) +
+#     geom_boxplot(color="black",fill= input$variablescat,alpha=0.2,
+#                  notchwidth = 0.8,outlier.colour="red",outlier.fill="red",
+#                  outlier.size=3)+
+#     stat_summary(fun.y=mean, geom="point", shape=18,
+#                  size=3, color="red")+
+#     theme_bw() +
+#     scale_fill_manual(values=c('lightcyan1'))
+# })
+
 output$boxplot <- renderPlot({
-  ggplot(data=data, aes(data$input$variablescat, data[,input$variablesnum])) + 
-    geom_boxplot(color="black",fill=c("cyan3",'darkgoldenrod1'),alpha=0.2,
-                 notchwidth = 0.8,outlier.colour="red",outlier.fill="red",
-                 outlier.size=3)+
-    stat_summary(fun.y=mean, geom="point", shape=18,
-                 size=3, color="red")+
-    theme_bw() +
-    scale_fill_manual(values=c('lightcyan1'))
+  ggplot(data,aes(x=data[,input$variablescat], y=data[,input$variablesnum])) +
+    geom_boxplot(aes(fill=input$variablescat)) + coord_flip()
+  
 })
+
 
 
 
