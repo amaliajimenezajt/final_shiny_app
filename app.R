@@ -29,12 +29,6 @@ data_real = data_real[,-1]
 
 data <- read.csv("BankChurners.csv/BankChurners.csv",sep=",")
 
-######## OBSERVE IF THERE ARE NA'S
-
-sum(is.na(data))  
-
-######### THERE IS NO NA
-
 ########## CLEAN THE DATA 
 
 row.names(data)=data[,1]
@@ -43,15 +37,49 @@ colnames(data)
 table(data$Income_Category)
 
 
-
 ################## AIM OF THE STUDY:
 #### For the aim of the study (description in the app), it is consirable eliminate the following variables which 
 #### are not neccesary for it:
 
-data <- data[,-c(4,9,10,11,12,21,22)]
+data <- data[,-c(4,6,9,10,11,12,21,22)]
 
 
-###################################  Now, i will convert the variables:
+######## OBSERVE IF THERE ARE NA'S
+
+sum(is.na(data))  
+
+
+############################## CORRELATION NUMERICAL VARIABLES
+
+library(corrplot)
+X <- data[,c(2,7:14)]
+corrplot(cor(X),is.corr=T)
+
+## As shown in the corplot, there is a high correlation between "Avg_Open_To_Buy" and "Credit_Limit"
+## Therefore, to avoid bad results in the models, we omitted the variables "Credit_Limit" and "Total_Trans_Ct".
+
+data <- data[,-c(7,9)]
+
+######### THERE IS NO NA in categorical variables, however see in the categorical variable the type "Unknown":
+
+table(data$Income_Category) # 1112 observations unknown
+table(data$Education_Level) #  1519   observations unknown
+table(data$Card_Category) # 0 unknown
+
+
+################################### CONVERT KNOWN in NA
+
+data$Income_Category[data$Income_Category == "Unknown"] <- NA
+data$Education_Level[data$Education_Level == "Unknown"] <- NA
+
+sum(is.na(data$Income_Category))
+sum(is.na(data$Education_Level))
+
+################################### IMPUT NA 
+
+data <- data[-c(which(is.na(data$Income_Category)),which(is.na(data$Education_Level))),]
+
+###################################  Now, I will convert the variables:
 
 data$Attrition_Flag=as.factor(data$Attrition_Flag)
 data$Card_Category=as.factor(data$Card_Category)
@@ -59,32 +87,31 @@ data$Customer_Age=as.integer(data$Customer_Age)
 data$Gender=as.factor(data$Gender)
 data$Education_Level=as.factor(data$Education_Level)
 data$Income_Category=as.factor(data$Income_Category)
-data$Avg_Open_To_Buy=as.integer(data$Avg_Open_To_Buy)
 
 
-#### For make classification i will transform the responde variable as follow:
+#### For make classification i will transform the response variable as follow:
 ################################### TRANSFORM THE RESPONSE VARIABLE:
 
 Income_Category_final=matrix(NA,nrow=nrow(data),ncol=1)
 for (i in 1:nrow(data)){
-  if(data[i,15]=="$120K +"){
+  if(data[i,5]=="$120K +"){
     Income_Category_final[i]="FirstClass"
   }
-  if(data[i,15]=="$60K - $80K"){
+  if(data[i,5]=="$60K - $80K"){
     Income_Category_final[i]="SecondClass"
   }
-  if(data[i,15]=="$80K - $120K"){
+  if(data[i,5]=="$80K - $120K"){
     Income_Category_final[i]="FirstClass"
   }
-  if(data[i,15]=="$40K - $60K"){
+  if(data[i,5]=="$40K - $60K"){
     Income_Category_final[i]="SecondClass"
   }
-  if(data[i,15]=="Less than $40K"){
+  if(data[i,5]=="Less than $40K"){
     Income_Category_final[i]="SecondClass"
   }
 }
 
-data = data.frame(data[,-15],Income_Category_final)
+data = data.frame(data[,-5],Income_Category_final)
 data$Income_Category_final = as.factor(data$Income_Category_final)
 
 
