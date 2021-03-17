@@ -139,6 +139,8 @@ X_scale <- scale(num_data)
 cat_data <- data[,c(1,3,4,5,12)]
 cat_data <- cat_data [,-2]
 
+list_col <- colnames(data)
+
 ############################################################### APP
 
 library(shiny)
@@ -165,16 +167,24 @@ choices_val_cat <- colnames(cat_data)
 summary_tabPanel <- tabPanel("Summary Data",
                              sidebarLayout(position = "left",
                                            sidebarPanel(
-                                             h3(strong("Data Summary")),
-                                             p("This shiny app is inspired by the classification problem addressed in the kaggle platform on the :",
-                                               code("Bank_Churners"),"where we found the following variables involved in the problem after cleaning the database:",
-                                             "- Hello wolrd","- Helloyyy"),
-                                             selectInput(inputId = "DataSet",
-                                                         label = "Choose a data set to show:",
-                                                         choices = c("Real Data","Data Cleaned")),
+                                             h3(strong("Data and Shiny Summary")),
+                                             p("This shiny app is inspired by the classification problem doin to the subject Statistical Learning and  addressed in the kaggle platform on the :",
+                                               code("Bank_Churners"),"where we found the following important variables involved in the problem after cleaning the database:"),
+                                             HTML("<hr>"),
+                                             p("Income Category:Demographic variable - Annual Income Category of the account holder"),
+                                             HTML("<hr>"),
+                                             p("Total_Amt_Chng_Q4_Q1 :Change in Transaction Amount (Q4 over Q1)"),
+                                             selectInput(inputId = "dataset",
+                                                         label = "Choose a variable to see the summary:",
+                                                         choices = 
+                                                           list_col),
+                                             selectInput(inputId = "variables",
+                                                         label = "Choose a data set to see the data:",
+                                                         choices = c("Numeric Variables","Categorical Variables")),
                                              numericInput(inputId = "obs",
                                                           label = "Number of observations to view:",
                                                           value = 10),
+                                             h4(strong("Click to see the references:")),
                                              p(tags$button(class="btn btn-default", 
                                                            `data-toggle`="collapse", 
                                                            `data-target`="#collapseExample",
@@ -182,12 +192,12 @@ summary_tabPanel <- tabPanel("Summary Data",
                                              div(class="collapse", id="collapseExample",
                                                  div(class="card card-body",
                                                      includeMarkdown("References.md")
-                                                 ))
+                                                 )),
                                                 
                                            ), # sidebarpanel
-                                           mainPanel(tabsetPanel(type = "tabs",
-                                                                 tabPanel("Summary", verbatimTextOutput("summary")),
-                                                                 tabPanel("View", tableOutput("view"))))
+                                           mainPanel(
+                                             verbatimTextOutput("summary"),
+                                             tableOutput("view"))
                                            
 
                              ) #sidebarLayout
@@ -202,7 +212,7 @@ numerical.plots <- tabPanel("Numerical Plots",
                                                       label=h4("Select Numeric Variable to show"),
                                                       choices=choices_val_num),
                                          radioButtons(inputId="variablescat", 
-                                                      label=h4("Select Numeric Variable to show"),
+                                                      label=h4("Select Categorical variable to split boxplot"),
                                                       choices=choices_val_cat),
                                       
                                          sliderInput("bins", label=h4("Select n-bins for the histogram plot"),
@@ -231,23 +241,25 @@ cat_plot <- tabPanel("Categorical Plotly",
 classif_tab <- tabPanel("Clasification Problem",
                         sidebarLayout(
                           sidebarPanel(
-                            p("Hello"),
-                            br(),
+                            h3(strong("Data and Shiny Summary")),
+                            p("This panel is inspirated in my previous project of Statistical Learning"),
+                            HTML("<hr>"),
+                            h3(strong("Select the partitioin of the data")),
                             sliderInput("trainsec",
                                         "Training Fraction Data:",
                                         value = 0.75, step = 0.05, min = 0.60, max = 0.80),
                             br(),
                             HTML("<hr>"),
+                            h3(strong("Select the classification method")),
                             radioButtons("methodsec", h4("Caret Model"),
                                          c("Linear Discriminant Analysis (lda)"          = "lda",
                                            "Naive Bayes" = "naive_bayes",
                                            "Logistic Regression  "                        = "glmnet",
                                            "Shrinkage Model"  = "sda"
                                          )),
-                            downloadButton("report", "Generate report of the results"),
-                            verbatimTextOutput("area")),
+                            HTML("<hr>"),
+                            downloadButton("reported", "Generate report of the results")),
                             mainPanel(tabsetPanel(type = "tabs",
-                                          tabPanel("Summary-Fit",  verbatimTextOutput("fitout")),
                                           tabPanel("Confusion Matrix",  verbatimTextOutput("confusionout")),
                                           tabPanel("Importance variables",  plotOutput("importance"))
                             ))
@@ -268,7 +280,7 @@ references <- tabPanel("References",
          includeMarkdown("References.md")
 )
 
-ui <- navbarPage("Shiny by Amalia Jiménez",
+ui <- navbarPage("Shiny App",
                  theme = shinytheme("superhero"),
                  summary_tabPanel,
                  numerical.plots,
@@ -304,20 +316,18 @@ server_fit <- function(partrain,method){
 server <- function(input, output) {
   
   
-DataSetInput <- reactive({
-    switch(input$DataSet,
-           "Real Data" = data_real,
-           "Data Cleaned" = data)
+  output$summary <- renderPrint({
+    summary(data[, (input$dataset)])
   })
   
-output$summary <- renderPrint({
-    DataSet <- DataSetInput()
-    summary(DataSet)
+datasetInput <- reactive({
+    switch(input$variables,
+           "Numeric Variables" = num_data,
+           "Categorical Variables" = cat_data)
   })
-  
 output$view <- renderTable({
-    head(DataSetInput(), n = input$obs)
-  })
+  head(datasetInput(), n = input$obs)
+})
 
 
 output$boxplot <- renderPlot({
@@ -384,14 +394,15 @@ output$numcluster <- renderPlot({
   plot1
  })
 
-output$report <- downloadHandler(
+output$reported <- downloadHandler(
   filename = "Report.html",
   content = function(file) {
     tempReport <- file.path(tempdir(), "report.Rmd")
     file.copy("report.Rmd", tempReport, overwrite = TRUE)
     params <- list(
-      methodsec = isolate(input$methodsec), 
       trainsec = isolate(input$trainsec), 
+      methodsec = isolate(input$methodsec), 
+      
       breaks = if(!isolate(input$methodsec)) {isolate(input$trainsec)} else {"Sturges"}
     )
     
