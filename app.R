@@ -265,7 +265,7 @@ classif_tab <- tabPanel("Machine Learning",
                                            "Shrinkage Model"  = "sda"
                                          )),
                             
-                            downloadButton("report", "Generate report")),
+                            downloadButton("reportt", "Generate report")),
                             mainPanel(tabsetPanel(type = "tabs",
                                                   tabPanel("Number of clusters",  plotOutput("cluster")),
                                           tabPanel("Importance variables",  plotOutput("importance"))
@@ -385,27 +385,36 @@ output$cluster <- renderPlot({
   plot1
  })
 
-output$report <- downloadHandler(
-  # Para la salida en PDF, usa "report.pdf"
-  filename = "report.html",
+
+
+output$reportt <- downloadHandler(
+  # For PDF output, change this to "report.pdf"
+  filename = "report.pdf",
   content = function(file) {
-    # Copia el reporte a un directorio temporal antes de porcesarlo, en 
-    #caso de que no tengamos permiso de escritura en el directorio actual
-    #puede ocurrir un error
+    # Copy the report file to a temporary directory before processing it, in
+    # case we don't have write permissions to the current working dir (which
+    # can happen when deployed).
     tempReport <- file.path(tempdir(), "report.Rmd")
     file.copy("report.Rmd", tempReport, overwrite = TRUE)
     
-    # configurar los parametros para pasar al documento .Rmd
-    params <- list(n = input$slider)
+    # Set up parameters to pass to Rmd document
+    params <- list(
+      clusterselect = isolate(input$clusterselect), 
+      trainsec = isolate(input$trainsec), 
+      methodsec = isolate(input$methodsec)
+    )
     
-    #Copilar el documento con la lista de parametros, de tal manera que se 
-    #evalue de la misma manera que el entorno de la palicacipon.
-    rmarkdown::render(tempReport, output_file = file,
+    # Knit the document, passing in the `params` list, and eval it in a
+    # child of the global environment (this isolates the code in the document
+    # from the code in this app).
+    rmarkdown::render(tempReport, 
+                      output_file = file,
                       params = params,
                       envir = new.env(parent = globalenv())
     )
   }
 )
+
 
 
 
