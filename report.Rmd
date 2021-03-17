@@ -1,16 +1,16 @@
 ---
 title: "report"
-author: "Amalia"
+author: "Amalia Jiménez Toledano"
 date: "6/3/2019"
 output: pdf_document
 params: 
-  clusterselect: "wss"
+      clusterselect: "wss"
       trainsec: 0.75
-      methodsec:"lda"
+      methodsec: "lda"
 ---
 
 
-```{r include=FALSE}
+```{r echo=FALSE}
 library(shiny)
 library(shinythemes)
 library(plotly)
@@ -26,7 +26,7 @@ library(pROC)
 
 
 
-```{r include=FALSE}
+```{r echo=FALSE}
 data <- read.csv("BankChurners.csv/BankChurners.csv",sep=",")
 
 ########## CLEAN THE DATA 
@@ -146,26 +146,11 @@ server_fit <- function(partrain,method){
 ```
 
 
-```{r}
-datamodel<-server_fit(input$trainsec,input$methodsec)
-```
-
-```{r echo=FALSE}
-plot1<- fviz_nbclust(X_scale,kmeans,method=input$clusterselect,k.max=10)+
-    geom_vline(xintercept = 8, linetype = 2)+
-    labs(subtitle = "Elbow method")
-plot1
-```
-
-
-```{r}
-plot((varImp(datamodel()$fitting)), main="Plot of variable importance values")
-```
 
 
 
  
-```{r  include=FALSE}
+```{r  echo=FALSE}
 set.seed(1996)
   datatrain <- createDataPartition(data$Income_Category_final, p=partrain, list=FALSE)
   trainBank <- data[datatrain,]
@@ -184,20 +169,20 @@ set.seed(1996)
 ```
  
  
-```{r include=FALSE}
-dist <- eval(parse(text=paste(params$dist)))
-```
-
 ```{r}
- # The `params` object is available in the document.
- params$n_sample
+datamodel<-server_fit(input$trainsec,input$methodsec)
 ```
-
- A histogram of `r params$n_sample` random points with `r params$dist` distribution
-
- <pre class="r"><code class="hljs">hist(`r params$dist`(`r params$n_sample`), breaks=<span class="hljs-string">"`r params$breaks`"</span>, main=<span class="hljs-string">"Random Generation"</span>)</code></pre>
 
 ```{r echo=FALSE}
-xname <- paste(params$dist,"(",params$n_sample,")",sep='')
-hist(dist(params$n_sample), breaks=params$breaks, main="Random Generation", xlab = xname )
+plot1<- fviz_nbclust(X_scale,kmeans,method=input$clusterselect,k.max=10)+
+    geom_vline(xintercept = 8, linetype = 2)+
+    labs(subtitle = "Elbow method")
+plot1
 ```
+
+
+```{r}
+plot((varImp(datamodel()$fitting)), main="Plot of variable importance values")
+```
+
+ 
