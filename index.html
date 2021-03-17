@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <title>d3.js data driven page</title>
+        <script src="https://d3js.org/d3.v6.min.js"></script>
+    </head>
+    <style>
+         body {background-color: rgb(231, 238, 245);text-align:center;}
+        .titulo {
+        font-size: 25px;
+        font-family: "Verdana";
+        color: #469fc9;
+        text-shadow: 0.5px 0.7px black;
+        margin: 5px;
+        text-align: center;
+        }
+        .second{
+font-size: 18px;
+font-family: "Verdana";
+color: #1b3b1d;
+text-shadow: 0.5px 0.2px rgb(27, 87, 72);
+margin: 5px;
+text-align: center;
+}
+.third{
+font-size: 13px;
+font-family: "Verdana";
+color: #5020d1;
+margin: 5px;
+text-align: center;
+}
+.bassic{
+font-size: 15px;
+font-family: "Verdana";
+color: #090711;
+margin: 5px;
+margin-right: 20px;
+margin-left: 20px;
+text-align: center;
+}
+.bassic2{
+font-size: 15px;
+font-family: "Verdana";
+color: #5e2d40;
+margin: 5px;
+text-align: left;
+}
+.button2 {
+  background-color:#c45858;
+  color: rgb(218, 207, 207);
+  text-align: center;
+  font-size: 30px;
+  padding: 2px;
+  width: 70px;
+  cursor: pointer;
+  margin: 10px
+}
+.button3 {
+    background-color:#4661b8;
+  color: rgb(218, 207, 207);
+  text-align: center;
+  font-size: 30px;
+  padding: 2px;
+  width: 70px;
+  cursor: pointer;
+  margin: 20px
+}
+    </style>
+<div class="titulo">
+    DATA TIDYING AND REPORTING
+    </div>
+    <br>
+    <div class="second">
+        AMALIA JIMENEZ TOLEDANO
+    </div>
+    <br>
+    <div class="third">
+        100446255@alumnos.uc3m.es
+    </div>
+    
+    <div class="second">
+      MY FIRST TAKE AWAY SHINYY APP
+    </div>
+<body>
+    <div class="bassic"> In this application you can see some graphical results on the kaggle database "Bank-Churnes".
+        The variables involved in the analyses are the following, but we will focus on the analyses of the variable Income_category.
+    </div>
+    <div class="bassic2">
+        <ul>
+            <li >Attrition_Flag: Internal event (customer activity) variable - if the account is closed then 1 else 0</li>
+            <li > Customer_Age:    Demographic variable - Customer's Age in Years</li>
+            <li >Education_Level: Demographic variable - Educational Qualification of the account holder (example: high school, college graduate, etc.). </li>
+            <li > Card-Category:  Product Variable - Type of Card (Blue, Silver, Gold, Platinum).</li>
+            <li > Credit_Limit: Credit Limit on the Credit Card.</li>
+            <li> Income_Category:Demographic variable - Annual Income Category of the account holder </li>
+            <li> Total_Trans_Amt: Total Transaction Amount (Last 12 months)</li>
+            <li > Total_Trans_Ct: Total Transaction Count (Last 12 months). 
+            </li>
+            </ul>
+
+    </div>
+    <div class="bassic">
+        Finally, you will find the following information panels:
+    </div>
+    <div class="bassic2">
+        <ul>
+            <li>Summary tab:You can obtain summary information on both numerical and categorical variables. You can also view the data with any number of observations. </li>
+            <li>R plots tab: You will be able to make boxplots and hisgrams for the numerical variables of the dataset. You will also be able to observe boxplots as a function of categorical variables.</li>
+            <li>Plotly tab: you will observe dynamic graphs thanks to the function useshinyjs where you will obtain information about the represented observations.</li>
+            <li>Machine Learning tab:in this panel you will find a summary of two machine learning projects, in the first subtab you can obtain the optimal number of clusters for the data, then you will have a subtab of the most important variables thanks to a training model with the caret library.</li>
+
+        </ul>
+    </div>
+
+
+
+</body>
+
+
+
+    </html>
