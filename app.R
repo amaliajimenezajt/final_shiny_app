@@ -168,7 +168,7 @@ summary_tabPanel <- tabPanel("Summary Data",
                              sidebarLayout(position = "left",
                                            sidebarPanel(
                                              h3(strong("Data and Shiny Summary")),
-                                             p("This shiny app is inspired by the classification problem doin to the subject Statistical Learning and  addressed in the kaggle platform on the :",
+                                             p("This shiny app is inspired by the machine learning problem doing in the kaggle platform on the :",
                                                code("Bank_Churners"),"where we found the following important variables involved in the problem after cleaning the database:"),
                                              HTML("<hr>"),
                                              p("Income Category:Demographic variable - Annual Income Category of the account holder"),
@@ -238,29 +238,32 @@ cat_plot <- tabPanel("Categorical Plotly",
 ) # tab panel 
 
 
-classif_tab <- tabPanel("Clasification Problem",
+classif_tab <- tabPanel("Machine Learning",
                         sidebarLayout(
                           sidebarPanel(
-                            h3(strong("Data and Shiny Summary")),
-                            p("This panel is inspirated in my previous project of Statistical Learning"),
+                            h4(strong("Cluster Problem")),
+                            selectInput(inputId = "clusterselect",
+                                        label = "Choose the method to suggest number of cluster:",
+                                        choices = c("Elbow method"="wss",
+                                                    "Silhouette method"="silhouette")),
                             HTML("<hr>"),
-                            h3(strong("Select the partitioin of the data")),
+                            h4(strong("Clasification Problem")),
+                            p("The first two panels are inspirated in my previous project of Mltivariate and Statistical Learning subjects"),
+                            h5(strong("Select the partitioin of the data")),
                             sliderInput("trainsec",
                                         "Training Fraction Data:",
                                         value = 0.75, step = 0.05, min = 0.60, max = 0.80),
-                            br(),
-                            HTML("<hr>"),
-                            h3(strong("Select the classification method")),
+                            h5(strong("Select the classification method")),
                             radioButtons("methodsec", h4("Caret Model"),
                                          c("Linear Discriminant Analysis (lda)"          = "lda",
                                            "Naive Bayes" = "naive_bayes",
                                            "Logistic Regression  "                        = "glmnet",
                                            "Shrinkage Model"  = "sda"
                                          )),
-                            HTML("<hr>"),
+                            
                             downloadButton("reported", "Generate report of the results")),
                             mainPanel(tabsetPanel(type = "tabs",
-                                          tabPanel("Confusion Matrix",  verbatimTextOutput("confusionout")),
+                                                  tabPanel("Number of clusters",  plotOutput("cluster")),
                                           tabPanel("Importance variables",  plotOutput("importance"))
                             ))
                             
@@ -378,17 +381,13 @@ output$fitout <- renderPrint({
 })
 
 
-output$confusionout <- renderPrint({
-  datamodel()$confusion
-})
-
 output$importance <- renderPlot({
   dotPlot(varImp(datamodel()$fitting), main="Plot of variable importance values")
 })
 
 
-output$numcluster <- renderPlot({
-  plot1<- fviz_nbclust(X_scale,kmeans,method=input$selectclus,k.max=10)+
+output$cluster <- renderPlot({
+  plot1<- fviz_nbclust(X_scale,kmeans,method=input$clusterselect,k.max=10)+
     geom_vline(xintercept = 8, linetype = 2)+
     labs(subtitle = "Elbow method")
   plot1
