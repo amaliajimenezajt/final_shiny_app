@@ -21,6 +21,8 @@ library(sda)
 library(pROC)
 library(stats)
 library(cluster)
+library(tidyverse)
+
 
 ##################################### UPLOAD THE CSV DATA
 
@@ -172,7 +174,15 @@ summary_tabPanel <- tabPanel("Summary Data",
                                                          choices = c("Real Data","Data Cleaned")),
                                              numericInput(inputId = "obs",
                                                           label = "Number of observations to view:",
-                                                          value = 10)
+                                                          value = 10),
+                                             p(tags$button(class="btn btn-default", 
+                                                           `data-toggle`="collapse", 
+                                                           `data-target`="#collapseExample",
+                                                           "References")),
+                                             div(class="collapse", id="collapseExample",
+                                                 div(class="card card-body",
+                                                     includeMarkdown("References.md")
+                                                 ))
                                                 
                                            ), # sidebarpanel
                                            mainPanel(tabsetPanel(type = "tabs",
@@ -194,9 +204,9 @@ numerical.plots <- tabPanel("Numerical Plots",
                                          radioButtons(inputId="variablescat", 
                                                       label=h4("Select Numeric Variable to show"),
                                                       choices=choices_val_cat),
+                                      
                                          sliderInput("bins", label=h4("Select n-bins for the histogram plot"),
-                                                     min = 1, max = 50, value = 30))
-                                         , # sidebar panel
+                                                     min = 1, max = 50, value = 30)), # sidebar panel
                             mainPanel(tabsetPanel(type = "tabs",
                                                   tabPanel("Box-plot", plotOutput("boxplot")),
                                                   tabPanel("Histogram", plotOutput("histPlot"))))
@@ -234,6 +244,7 @@ classif_tab <- tabPanel("Clasification Problem",
                                            "Logistic Regression  "                        = "glmnet",
                                            "Shrinkage Model"  = "sda"
                                          )),
+                            downloadButton("report", "Generate report"),
                             verbatimTextOutput("area")),
                             mainPanel(tabsetPanel(type = "tabs",
                                           tabPanel("Summary-Fit",  verbatimTextOutput("fitout")),
@@ -244,42 +255,31 @@ classif_tab <- tabPanel("Clasification Problem",
                         ) # sidebarLayout
 ) # tabpanel
 
-cluster_panel <- tabPanel("Clustering",
-                          sidebarLayout(
-                            sidebarPanel(
-                              p("Cluster"),
-                              HTML("<hr>"),
-                              selectInput(inputId = "selectclus",
-                                          label = "Choose method number cluster:",
-                                          choices = c("Elbow method"="wss",
-                                                      "Silhouette method"="silhouette",
-                                                       "Gap statistics"="gap_stat")),
-                              numericInput("clusternum", "Number of Cluster to select:", 2, min=2, max=5,step = 1)),
-                            mainPanel(tabsetPanel(type = "tabs",
-                                                 # tabPanel("Number of cluster",  plotOutput("numcluster"))
-                                                  tabPanel("Summary k-means",  verbatimTextOutput("kmean"))
-                                                 # tabPanel("plotkmean",  plotOutput("kmeanplot"))
 
-                            ))
-
-
-                )
+references <- tabPanel("References",
+         p(tags$button(class="btn btn-default", 
+                       `data-toggle`="collapse", 
+                       `data-target`="#collapseExample",
+                       "References")),
+         div(class="collapse", id="collapseExample",
+             div(class="card card-body",
+                 includeMarkdown("References.md")
+             )),
+         includeMarkdown("References.md")
 )
-
-
 
 ui <- navbarPage("Shiny by Amalia Jiménez",
                  theme = shinytheme("superhero"),
                  summary_tabPanel,
                  numerical.plots,
                  cat_plot,
-                 classif_tab,
-                 cluster_panel
+                 classif_tab
                  )
 
 ################################## SERVER SECTION
 
 server_fit <- function(partrain,method){
+  
   set.seed(1996)
   datatrain <- createDataPartition(data$Income_Category_final, p=partrain, list=FALSE)
   trainBank <- data[datatrain,]
@@ -295,7 +295,6 @@ server_fit <- function(partrain,method){
   
   prediction <- predict(fitmodel, testBank)
   confusionmatrix <- confusionMatrix(prediction, testBank$Income_Category_final)
-  
   invisible(list(fitting=fitmodel,testing=testBank,confusion=confusionmatrix))
 }
 
@@ -385,20 +384,34 @@ output$numcluster <- renderPlot({
   plot1
  })
 
-# datakmeans <- reactive({
-#   kmeans (input$numcluster)
-# })
+output$report <- downloadHandler(
+  # For PDF output, change this to "report.pdf"
+  filename = "Report.html",
+  content = function(file) {
+    # Copy the report file to a temporary directory before processing it, in
+    # case we don't have write permissions to the current working dir (which
+    # can happen when deployed).
+    tempReport <- file.path(tempdir(), "report.Rmd")
+    file.copy("report.Rmd", tempReport, overwrite = TRUE)
+    
+    # Set up parameters to pass to Rmd document
+    params <- list(
+      n_sample = isolate(input$n_sample), 
+      dist = isolate(input$dist), 
+      breaks = if(!isolate(input$auto_bins)) {isolate(input$n_bins)} else {"Sturges"}
+    )
+    
+    # Knit the document, passing in the `params` list, and eval it in a
+    # child of the global environment (this isolates the code in the document
+    # from the code in this app).
+    rmarkdown::render(tempReport, output_file = file,
+                      params = params,
+                      envir = new.env(parent = globalenv())
+    )
+  }
+)
 
 
-output$kmean <- renderPlot({
- km_cluster <- kmeans(X_scale, input$clusternum)
-plot2 <-fviz_cluster(km_cluster, data = X_scale,
-               ellipse.type = "euclid", # Concentration ellipse star.plot = TRUE, # Add segments from centroids to items repel = TRUE, # Avoid label overplotting (slow)
-               ggtheme = theme_minimal()
-             )
-plot2
-
-})
 
 
 }
