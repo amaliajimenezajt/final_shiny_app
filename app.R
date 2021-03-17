@@ -244,7 +244,7 @@ classif_tab <- tabPanel("Clasification Problem",
                                            "Logistic Regression  "                        = "glmnet",
                                            "Shrinkage Model"  = "sda"
                                          )),
-                            downloadButton("report", "Generate report"),
+                            downloadButton("report", "Generate report of the results"),
                             verbatimTextOutput("area")),
                             mainPanel(tabsetPanel(type = "tabs",
                                           tabPanel("Summary-Fit",  verbatimTextOutput("fitout")),
@@ -385,25 +385,16 @@ output$numcluster <- renderPlot({
  })
 
 output$report <- downloadHandler(
-  # For PDF output, change this to "report.pdf"
   filename = "Report.html",
   content = function(file) {
-    # Copy the report file to a temporary directory before processing it, in
-    # case we don't have write permissions to the current working dir (which
-    # can happen when deployed).
     tempReport <- file.path(tempdir(), "report.Rmd")
     file.copy("report.Rmd", tempReport, overwrite = TRUE)
-    
-    # Set up parameters to pass to Rmd document
     params <- list(
-      n_sample = isolate(input$n_sample), 
-      dist = isolate(input$dist), 
-      breaks = if(!isolate(input$auto_bins)) {isolate(input$n_bins)} else {"Sturges"}
+      methodsec = isolate(input$methodsec), 
+      trainsec = isolate(input$trainsec), 
+      breaks = if(!isolate(input$methodsec)) {isolate(input$trainsec)} else {"Sturges"}
     )
     
-    # Knit the document, passing in the `params` list, and eval it in a
-    # child of the global environment (this isolates the code in the document
-    # from the code in this app).
     rmarkdown::render(tempReport, output_file = file,
                       params = params,
                       envir = new.env(parent = globalenv())
