@@ -15,6 +15,8 @@ library(tensorflow)
 library(reticulate)
 library(ggplot2)
 library(devtools)
+library(factoextra)
+library(NbClust)
 
 ##################################### UPLOAD THE CSV DATA
 
@@ -122,6 +124,9 @@ data$Income_Category_final = as.factor(data$Income_Category_final)
 
 num_data <- data[,c(2,6:11)]
 num_data <- num_data[,-c(3,6)]
+new_data <-data.frame(num_data
+                      ,data$Income_Category_final)
+X_scale <- scale(num_data)
 
 ############## CATEGORICAL VARIABLES
 
@@ -233,6 +238,29 @@ classif_tab <- tabPanel("Clasification Problem",
                         ) # sidebarLayout
 ) # tabpanel
 
+cluster_panel <- tabPanel("Clustering",
+                          sidebarLayout(
+                            sidebarPanel(
+                              p("Cluster"),
+                              numericInput("randomseed", "Random Seed", 1996, min=100, max=10000),
+                              HTML("<hr>"),
+                              selectInput(inputId = "numberclus",
+                                          label = "Choose method number cluster:",
+                                          choices = c("Elbow method"="wss",
+                                                      "Silhouette method"="silhouette",
+                                                       "Gap statistics"="gap_stat")),
+                              numericInput("numcluster", "Number of Cluster", 2, min=2, max=5,step = 1)),
+                            mainPanel(tabsetPanel(type = "tabs",
+                                                  tabPanel("Number of cluster",  plotOutput("numcluster")),
+                                                  tabPanel("Summary k-means",  verbatimTextOutput("kmean")),
+                                                  tabPanel("plotkmean",  plotOutput("kmean"))
+
+                            ))
+                                                 
+            
+                )
+)
+
 
 
 
@@ -243,26 +271,25 @@ ui <- navbarPage("Shiny by Amalia Jiménez",
                  summary_tabPanel,
                  numerical.plots,
                  cat_plot,
-                 classif_tab 
+                 classif_tab, 
+                 cluster_panel
                  )
 
 ################################## SERVER SECTION
 
 server_train <- function(train){
   set.seed(1996)
-  datatrain <- createDataPartition(y=data$Income_Category_final, p=train, list=FALSE)
-  trainBank <- data[datatrain,]
-  testBank <- data[-trainBank,]
+  datatrain <- createDataPartition(data$Income_Category_final, p=train, list=FALSE)
+  trainBank <- new_data [datatrain,]
+  testBank <- new_data [-trainBank,]
   invisible(list(training=trainBank,testing=testBank))
 }
 
-server_model <- function(methodsec,training){
-  ctrl <- trainControl(method = "repeatedcv", 
-                       repeats = 1,
+server_model <- function(method,training){
+  ctrl <- trainControl(method = "cv", 
                        number = 5)
   fit <- train(Income_Category_final ~ ., 
-                 method = methodsec,
-                 family = "binomial",
+                 method = method,
                  data = training,
                  preProcess = c("center", "scale"),
                  metric = "Accuracy",
@@ -271,11 +298,11 @@ server_model <- function(methodsec,training){
   
 }
 
-response_fit <- function(methodsec, train)
+response_fit <- function(methodsec, training)
 {
-  dis <- server_train(train)
-  fit <- server_model(methodsec, dis$training)
-  invisible(fit)
+  datat <- server_train(train)
+  fitting <- server_model(methodsec, datat$training)
+  invisible(fitting)
 }
 
 
@@ -343,9 +370,14 @@ datamodel <- reactive({
 })
 
 output$fit <- renderPrint({
-  datamodel()$fit
+  datamodel()$fitting
 })
 
+output$numcluster <- renderPlot({
+   fviz_nbclust(X_scale,kmeans,method=numberclus,k.max=10)+
+     geom_vline(xintercept = 8, linetype = 2)+
+     labs(subtitle = "Elbow method")
+ })
 
 }
 
