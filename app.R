@@ -229,11 +229,15 @@ cat_plot <- tabPanel("Categorical Plotly",
                      useShinyjs(),
                     cellWidths = 300,
                     cellArgs = list(style = "padding: 6px"),
-                     h3("This is the Plotly of the categorical variable Income which is the response in the clasification problem"),
+                     h3("This is the Plotly of the categorical variable Income which is the response in the clasification problem with the following numerical variables:"),
                     br(),
                     br(),
                      column(6,plotlyOutput(outputId = "plotlysec"),height="600px"),
                      column(6,plotlyOutput(outputId = "plotlypoint"),height="600px"),
+                    br(),
+                    br(),
+                    h4("If you click on the plots you can get information about the individuals.")
+                    
                           
 ) # tab panel 
 
@@ -261,7 +265,7 @@ classif_tab <- tabPanel("Machine Learning",
                                            "Shrinkage Model"  = "sda"
                                          )),
                             
-                            downloadButton("reported", "Generate report of the results")),
+                            downloadButton("report", "Generate report")),
                             mainPanel(tabsetPanel(type = "tabs",
                                                   tabPanel("Number of clusters",  plotOutput("cluster")),
                                           tabPanel("Importance variables",  plotOutput("importance"))
@@ -270,18 +274,6 @@ classif_tab <- tabPanel("Machine Learning",
                         ) # sidebarLayout
 ) # tabpanel
 
-
-references <- tabPanel("References",
-         p(tags$button(class="btn btn-default", 
-                       `data-toggle`="collapse", 
-                       `data-target`="#collapseExample",
-                       "References")),
-         div(class="collapse", id="collapseExample",
-             div(class="card card-body",
-                 includeMarkdown("References.md")
-             )),
-         includeMarkdown("References.md")
-)
 
 ui <- navbarPage("Shiny App",
                  theme = shinytheme("superhero"),
@@ -354,7 +346,7 @@ output$histPlot <- renderPlot({
 output$plotlysec <- renderPlotly({
   plot_ly(data, x = ~Total_Trans_Amt, y = ~Total_Trans_Ct, type = "scatter", mode = "markers",
           symbol = ~Income_Category_final) %>% 
-    layout(title = "Freq12 vs Freq 24",
+    layout(title = "Total_Trans_Amt vs Total_Trans_Ct",
            xaxis = list(title = "Total_Trans_Amt"), 
            yaxis = list(title = "Total_Trans_Ct"))
 })
@@ -393,18 +385,21 @@ output$cluster <- renderPlot({
   plot1
  })
 
-output$reported <- downloadHandler(
-  filename = "Report.html",
+output$report <- downloadHandler(
+  # Para la salida en PDF, usa "report.pdf"
+  filename = "report.html",
   content = function(file) {
+    # Copia el reporte a un directorio temporal antes de porcesarlo, en 
+    #caso de que no tengamos permiso de escritura en el directorio actual
+    #puede ocurrir un error
     tempReport <- file.path(tempdir(), "report.Rmd")
     file.copy("report.Rmd", tempReport, overwrite = TRUE)
-    params <- list(
-      trainsec = isolate(input$trainsec), 
-      methodsec = isolate(input$methodsec), 
-      
-      breaks = if(!isolate(input$methodsec)) {isolate(input$trainsec)} else {"Sturges"}
-    )
     
+    # configurar los parametros para pasar al documento .Rmd
+    params <- list(n = input$slider)
+    
+    #Copilar el documento con la lista de parametros, de tal manera que se 
+    #evalue de la misma manera que el entorno de la palicacipon.
     rmarkdown::render(tempReport, output_file = file,
                       params = params,
                       envir = new.env(parent = globalenv())
