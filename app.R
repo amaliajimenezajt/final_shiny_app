@@ -15,8 +15,12 @@ library(tensorflow)
 library(reticulate)
 library(ggplot2)
 library(devtools)
-library(factoextra)
+library("factoextra")
 library(NbClust)
+library(sda)
+library(pROC)
+library(stats)
+library(cluster)
 
 ##################################### UPLOAD THE CSV DATA
 
@@ -203,10 +207,11 @@ numerical.plots <- tabPanel("Numerical Plots",
 
 cat_plot <- tabPanel("Categorical Plotly",
                      useShinyjs(),
-                    style = "border: 1px solid silver;",
                     cellWidths = 300,
                     cellArgs = list(style = "padding: 6px"),
                      h3("This is the Plotly of the categorical variable Income which is the response in the clasification problem"),
+                    br(),
+                    br(),
                      column(6,plotlyOutput(outputId = "plotlysec"),height="600px"),
                      column(6,plotlyOutput(outputId = "plotlypoint"),height="600px"),
                           
@@ -218,20 +223,21 @@ classif_tab <- tabPanel("Clasification Problem",
                           sidebarPanel(
                             p("Hello"),
                             br(),
-                            sliderInput("train",
+                            sliderInput("trainsec",
                                         "Training Fraction Data:",
                                         value = 0.75, step = 0.05, min = 0.60, max = 0.80),
                             br(),
                             HTML("<hr>"),
                             radioButtons("methodsec", h4("Caret Model"),
                                          c("Linear Discriminant Analysis (lda)"          = "lda",
-                                           "Quadratic Discriminant Analysis (lda)" = "qda",
-                                           "Random Forest (rf) "                        = "rf",
-                                           "Support Vector Machines"  = "svm"
-                                         ))),
+                                           "Naive Bayes" = "naive_bayes",
+                                           "Logistic Regression  "                        = "glmnet",
+                                           "Shrinkage Model"  = "sda"
+                                         )),
+                            verbatimTextOutput("area")),
                             mainPanel(tabsetPanel(type = "tabs",
-                                          tabPanel("Summary-Fit",  verbatimTextOutput("fit")),
-                                          tabPanel("ConfusionMatrix",  verbatimTextOutput("confusion")),
+                                          tabPanel("Summary-Fit",  verbatimTextOutput("fitout")),
+                                          tabPanel("Confusion Matrix",  verbatimTextOutput("confusionout")),
                                           tabPanel("Importance variables",  plotOutput("importance"))
                             ))
                             
@@ -242,27 +248,23 @@ cluster_panel <- tabPanel("Clustering",
                           sidebarLayout(
                             sidebarPanel(
                               p("Cluster"),
-                              numericInput("randomseed", "Random Seed", 1996, min=100, max=10000),
                               HTML("<hr>"),
-                              selectInput(inputId = "numberclus",
+                              selectInput(inputId = "selectclus",
                                           label = "Choose method number cluster:",
                                           choices = c("Elbow method"="wss",
                                                       "Silhouette method"="silhouette",
                                                        "Gap statistics"="gap_stat")),
-                              numericInput("numcluster", "Number of Cluster", 2, min=2, max=5,step = 1)),
+                              numericInput("clusternum", "Number of Cluster to select:", 2, min=2, max=5,step = 1)),
                             mainPanel(tabsetPanel(type = "tabs",
-                                                  tabPanel("Number of cluster",  plotOutput("numcluster")),
-                                                  tabPanel("Summary k-means",  verbatimTextOutput("kmean")),
-                                                  tabPanel("plotkmean",  plotOutput("kmean"))
+                                                 # tabPanel("Number of cluster",  plotOutput("numcluster"))
+                                                  tabPanel("Summary k-means",  verbatimTextOutput("kmean"))
+                                                 # tabPanel("plotkmean",  plotOutput("kmeanplot"))
 
                             ))
-                                                 
-            
+
+
                 )
 )
-
-
-
 
 
 
@@ -271,39 +273,32 @@ ui <- navbarPage("Shiny by Amalia Jiménez",
                  summary_tabPanel,
                  numerical.plots,
                  cat_plot,
-                 classif_tab, 
+                 classif_tab,
                  cluster_panel
                  )
 
 ################################## SERVER SECTION
 
-server_train <- function(train){
+server_fit <- function(partrain,method){
   set.seed(1996)
-  datatrain <- createDataPartition(data$Income_Category_final, p=train, list=FALSE)
-  trainBank <- new_data [datatrain,]
-  testBank <- new_data [-trainBank,]
-  invisible(list(training=trainBank,testing=testBank))
-}
-
-server_model <- function(method,training){
+  datatrain <- createDataPartition(data$Income_Category_final, p=partrain, list=FALSE)
+  trainBank <- data[datatrain,]
+  testBank <- data[-datatrain,]
   ctrl <- trainControl(method = "cv", 
                        number = 5)
-  fit <- train(Income_Category_final ~ ., 
-                 method = method,
-                 data = training,
-                 preProcess = c("center", "scale"),
-                 metric = "Accuracy",
-                 trControl = ctrl)
-  invisible(fit)
+  fitmodel <- train(Income_Category_final ~ ., 
+                    method = method,
+                    data = trainBank,
+                    preProcess = c("center", "scale"),
+                    metric = "Accuracy",
+                    trControl = ctrl)
   
+  prediction <- predict(fitmodel, testBank)
+  confusionmatrix <- confusionMatrix(prediction, testBank$Income_Category_final)
+  
+  invisible(list(fitting=fitmodel,testing=testBank,confusion=confusionmatrix))
 }
 
-response_fit <- function(methodsec, training)
-{
-  datat <- server_train(train)
-  fitting <- server_model(methodsec, datat$training)
-  invisible(fitting)
-}
 
 
 
@@ -366,18 +361,45 @@ output$plotlypoint <- renderPlotly({
 })
 
 datamodel <- reactive({
-  response_fit(input$train,input$methodsec)
+  server_fit(input$trainsec,input$methodsec)
 })
 
-output$fit <- renderPrint({
+output$fitout <- renderPrint({
   datamodel()$fitting
 })
 
+
+output$confusionout <- renderPrint({
+  datamodel()$confusion
+})
+
+output$importance <- renderPlot({
+  dotPlot(varImp(datamodel()$fitting), main="Plot of variable importance values")
+})
+
+
 output$numcluster <- renderPlot({
-   fviz_nbclust(X_scale,kmeans,method=numberclus,k.max=10)+
-     geom_vline(xintercept = 8, linetype = 2)+
-     labs(subtitle = "Elbow method")
+  plot1<- fviz_nbclust(X_scale,kmeans,method=input$selectclus,k.max=10)+
+    geom_vline(xintercept = 8, linetype = 2)+
+    labs(subtitle = "Elbow method")
+  plot1
  })
+
+# datakmeans <- reactive({
+#   kmeans (input$numcluster)
+# })
+
+
+output$kmean <- renderPlot({
+ km_cluster <- kmeans(X_scale, input$clusternum)
+plot2 <-fviz_cluster(km_cluster, data = X_scale,
+               ellipse.type = "euclid", # Concentration ellipse star.plot = TRUE, # Add segments from centroids to items repel = TRUE, # Avoid label overplotting (slow)
+               ggtheme = theme_minimal()
+             )
+plot2
+
+})
+
 
 }
 
