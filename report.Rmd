@@ -1,0 +1,203 @@
+---
+title: "report"
+author: "Amalia"
+date: "6/3/2019"
+output: pdf_document
+params: 
+  clusterselect: "wss"
+      trainsec: 0.75
+      methodsec:"lda"
+---
+
+
+```{r include=FALSE}
+library(shiny)
+library(shinythemes)
+library(plotly)
+library(shinyjs)
+library(caret)
+library(AppliedPredictiveModeling)
+library(caret)
+library(shiny)
+library(e1071)
+library(pROC)
+
+```
+
+
+
+```{r include=FALSE}
+data <- read.csv("BankChurners.csv/BankChurners.csv",sep=",")
+
+########## CLEAN THE DATA 
+
+row.names(data)=data[,1]
+data = data[,-1]
+colnames(data)
+table(data$Income_Category)
+
+
+################## AIM OF THE STUDY:
+#### For the aim of the study (description in the app), it is consirable eliminate the following variables which 
+#### are not neccesary for it:
+
+data <- data[,-c(4,6,9,10,11,12,21,22)]
+
+
+######## OBSERVE IF THERE ARE NA'S
+
+sum(is.na(data))  
+
+
+############################## CORRELATION NUMERICAL VARIABLES
+
+library(corrplot)
+X <- data[,c(2,7:14)]
+corrplot(cor(X),is.corr=T)
+
+## As shown in the corplot, there is a high correlation between "Avg_Open_To_Buy" and "Credit_Limit"
+## Therefore, to avoid bad results in the models, we omitted the variables "Credit_Limit" and "Total_Trans_Ct".
+
+data <- data[,-c(7,9)]
+
+
+################################### CONVERT KNOWN in NA
+
+data$Income_Category[data$Income_Category == "Unknown"] <- NA
+data$Education_Level[data$Education_Level == "Unknown"] <- NA
+
+
+data <- data[-c(which(is.na(data$Income_Category)),which(is.na(data$Education_Level))),]
+
+###################################  Now, I will convert the variables:
+
+
+data$Gender=as.factor(data$Gender)
+data$Attrition_Flag=as.factor(data$Attrition_Flag)
+data$Card_Category=as.factor(data$Card_Category)
+data$Customer_Age=as.integer(data$Customer_Age)
+data$Gender=as.factor(data$Gender)
+data$Education_Level=as.factor(data$Education_Level)
+data$Income_Category=as.factor(data$Income_Category)
+
+
+#### For make classification i will transform the response variable as follow:
+################################### TRANSFORM THE RESPONSE VARIABLE:
+
+Income_Category_final=matrix(NA,nrow=nrow(data),ncol=1)
+for (i in 1:nrow(data)){
+  if(data[i,5]=="$120K +"){
+    Income_Category_final[i]="FirstClass"
+  }
+  if(data[i,5]=="$60K - $80K"){
+    Income_Category_final[i]="SecondClass"
+  }
+  if(data[i,5]=="$80K - $120K"){
+    Income_Category_final[i]="FirstClass"
+  }
+  if(data[i,5]=="$40K - $60K"){
+    Income_Category_final[i]="SecondClass"
+  }
+  if(data[i,5]=="Less than $40K"){
+    Income_Category_final[i]="SecondClass"
+  }
+}
+
+data = data.frame(data[,-5],Income_Category_final)
+data$Income_Category_final = as.factor(data$Income_Category_final)
+
+############## NUMERICAL VARIABLES
+
+num_data <- data[,c(2,6:11)]
+num_data <- num_data[,-c(3,6)]
+new_data <-data.frame(num_data
+                      ,data$Income_Category_final)
+X_scale <- scale(num_data)
+
+############## CATEGORICAL VARIABLES
+
+cat_data <- data[,c(1,3,4,5,12)]
+cat_data <- cat_data [,-2]
+
+list_col <- colnames(data)
+```
+
+
+```{r include=FALSE}
+server_fit <- function(partrain,method){
+  
+  set.seed(1996)
+  datatrain <- createDataPartition(data$Income_Category_final, p=partrain, list=FALSE)
+  trainBank <- data[datatrain,]
+  testBank <- data[-datatrain,]
+  ctrl <- trainControl(method = "cv", 
+                       number = 5)
+  fitmodel <- train(Income_Category_final ~ ., 
+                    method = method,
+                    data = trainBank,
+                    preProcess = c("center", "scale"),
+                    metric = "Accuracy",
+                    trControl = ctrl)
+  
+  prediction <- predict(fitmodel, testBank)
+  confusionmatrix <- confusionMatrix(prediction, testBank$Income_Category_final)
+  invisible(list(fitting=fitmodel,testing=testBank,confusion=confusionmatrix))
+}
+```
+
+
+```{r}
+datamodel<-server_fit(input$trainsec,input$methodsec)
+```
+
+```{r echo=FALSE}
+plot1<- fviz_nbclust(X_scale,kmeans,method=input$clusterselect,k.max=10)+
+    geom_vline(xintercept = 8, linetype = 2)+
+    labs(subtitle = "Elbow method")
+plot1
+```
+
+
+```{r}
+plot((varImp(datamodel()$fitting)), main="Plot of variable importance values")
+```
+
+
+
+ 
+```{r  include=FALSE}
+set.seed(1996)
+  datatrain <- createDataPartition(data$Income_Category_final, p=partrain, list=FALSE)
+  trainBank <- data[datatrain,]
+  testBank <- data[-datatrain,]
+  ctrl <- trainControl(method = "cv", 
+                       number = 5)
+  fitmodel <- train(Income_Category_final ~ ., 
+                    method = method,
+                    data = trainBank,
+                    preProcess = c("center", "scale"),
+                    metric = "Accuracy",
+                    trControl = ctrl)
+  
+  prediction <- predict(fitmodel, testBank)
+  confusionmatrix <- confusionMatrix(prediction, testBank$Income_Category_final)
+```
+ 
+ 
+```{r include=FALSE}
+dist <- eval(parse(text=paste(params$dist)))
+```
+
+```{r}
+ # The `params` object is available in the document.
+ params$n_sample
+```
+
+ A histogram of `r params$n_sample` random points with `r params$dist` distribution
+
+ <pre class="r"><code class="hljs">hist(`r params$dist`(`r params$n_sample`), breaks=<span class="hljs-string">"`r params$breaks`"</span>, main=<span class="hljs-string">"Random Generation"</span>)</code></pre>
+
+```{r echo=FALSE}
+xname <- paste(params$dist,"(",params$n_sample,")",sep='')
+hist(dist(params$n_sample), breaks=params$breaks, main="Random Generation", xlab = xname )
+```
